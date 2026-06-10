@@ -1,0 +1,13 @@
+Redis is an open-source, in-memory data structure store used as a database, cache, message broker, and streaming engine. In our Scalable RAG pipeline, Redis acts as a high-performance query caching layer.
+
+### How Query Caching Works
+When a user submits a query to the RAG system, the application first hashes the query string and checks if it exists in the Redis database.
+If there is a cache hit, the previously computed LLM response is returned immediately. This drops the latency to less than 5 milliseconds, bypassing the vector database query and prompt completion steps.
+If there is a cache miss, the pipeline executes the standard path: BGE embedding generation, Qdrant vector retrieval, PostgreSQL metadata validation, and LLM text completion.
+The final response is then stored in Redis with a configurable Time-To-Live (TTL), e.g., 3600 seconds, so subsequent identical queries benefit from cached values.
+
+### Cache Eviction and Memory Policies
+To maintain performance in scalable systems, Redis should be configured with an eviction policy such as `volatile-lru` (Least Recently Used) or `allkeys-lru`. This ensures that if the memory limit is reached, older cached search queries are removed to make room for newer requests.
+Using Redis caching significantly improves concurrent query handling, reduces external API usage fees (e.g., OpenAI or Anthropic tokens), and ensures sub-second responses for popular questions.
+We can run Redis locally using a simple Docker image: `docker run --name rag-redis -p 6379:6379 -d redis:alpine`.
+This cache layer is critical for real-time search user interfaces that handle repeated queries.

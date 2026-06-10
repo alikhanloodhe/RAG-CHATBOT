@@ -1,0 +1,15 @@
+Qdrant is a vector similarity search engine and database. It provides a production-ready service with a convenient API to store, search, and manage high-dimensional vectors along with additional payloads.
+
+### Vector Search in RAG
+Retrieval-Augmented Generation relies on semantic search to find matching source content. In this project, documents are parsed and segmented into chunks.
+Each chunk is passed to the `BAAI/bge-small-en-v1.5` sentence-transformer model to compute a dense vector representation of 384 dimensions.
+These vectors are upserted into Qdrant alongside a payload containing the document ID, source filename, chunk index, and the original text segment.
+When a user asks a question, the query is embedded into a 384-dimensional vector and sent to Qdrant's search API.
+Qdrant performs a Cosine Similarity search over the collection, calculating distance metrics to find the top matching vector points.
+
+### Quantization and HNSW Indexing
+To scale to millions of documents, Qdrant utilizes Hierarchical Navigable Small World (HNSW) graphs. HNSW builds a multi-layer graph structure that allows logarithmic search times for Approximate Nearest Neighbor (ANN) search.
+Additionally, Qdrant supports Scalar Quantization (converting float32 vectors to int8) and Product Quantization. This compresses vector footprints by up to 4x and speeds up vector comparison operations in RAM, making the RAG pipeline highly scalable and resource-efficient.
+In-memory collections can be used for rapid development, while persistent disk storage ensures durability in staging and production.
+Deploying Qdrant can be handled via Docker: `docker run -p 6333:6333 qdrant/qdrant`.
+Using Qdrant prevents index rebuilding bottlenecks and provides millisecond retrievals.
