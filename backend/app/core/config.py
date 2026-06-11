@@ -37,6 +37,7 @@ class Settings(BaseSettings):
         if self.is_production and "*" in origins:
             raise ValueError("CORS_ORIGINS cannot include '*' when APP_ENV=production")
         return origins
+    DATABASE_URL: str | None = None
     
     # Local Postgres configuration
     POSTGRES_SERVER: str = "localhost"
@@ -53,15 +54,30 @@ class Settings(BaseSettings):
         Returns:
             Connection string matching standard asyncpg schemas.
         """
+        if self.DATABASE_URL:
+            url = self.DATABASE_URL
+            if url.startswith("postgresql://"):
+                url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            elif url.startswith("postgres://"):
+                url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+            
+            # Clean up asyncpg incompatible parameters like sslmode and channel_binding
+            if "?" in url:
+                base_url, query_params = url.split("?", 1)
+                # Keep standard ssl=require parameter for cloud databases
+                url = f"{base_url}?ssl=require"
+            return url
         password_part = f":{self.POSTGRES_PASSWORD}" if self.POSTGRES_PASSWORD else ""
         return f"postgresql+asyncpg://{self.POSTGRES_USER}{password_part}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
     
     # Qdrant configuration
+    QDRANT_URL: str | None = None
     QDRANT_HOST: str = "localhost"
     QDRANT_PORT: int = 6333
     QDRANT_API_KEY: str | None = None
     
     # Redis configuration
+    REDIS_URL: str | None = None
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: str | None = None

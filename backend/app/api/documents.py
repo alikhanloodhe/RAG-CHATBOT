@@ -116,13 +116,13 @@ async def process_document_task(doc_id: int, file_bytes: bytes, filename: str, c
             invalidate_user_query_cache(user_id)
             logger.info(
                 "Document processed",
-                extra={"document_id": doc_id, "filename": filename, "chunk_count": len(chunks)},
+                extra={"document_id": doc_id, "file_name": filename, "chunk_count": len(chunks)},
             )
 
         except Exception as e:
             logger.exception(
                 "Document ingest failed",
-                extra={"document_id": doc_id, "filename": filename},
+                extra={"document_id": doc_id, "file_name": filename},
             )
             try:
                 # Re-fetch in case session was closed/rolled back

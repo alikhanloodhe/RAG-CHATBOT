@@ -20,6 +20,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_database_uri_is_built_from_local_postgres_settings(self):
         settings = Settings(
+            DATABASE_URL=None,
             POSTGRES_SERVER="localhost",
             POSTGRES_PORT=5432,
             POSTGRES_USER="postgres",
@@ -30,6 +31,24 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(
             settings.SQLALCHEMY_DATABASE_URI,
             "postgresql+asyncpg://postgres:postgres@localhost:5432/rag_db",
+        )
+
+    def test_database_uri_is_read_from_database_url(self):
+        settings = Settings(
+            DATABASE_URL="postgresql+asyncpg://user:pass@host:5432/db"
+        )
+        self.assertEqual(
+            settings.SQLALCHEMY_DATABASE_URI,
+            "postgresql+asyncpg://user:pass@host:5432/db"
+        )
+
+    def test_database_uri_converts_postgres_scheme(self):
+        settings = Settings(
+            DATABASE_URL="postgres://user:pass@host:5432/db"
+        )
+        self.assertEqual(
+            settings.SQLALCHEMY_DATABASE_URI,
+            "postgresql+asyncpg://user:pass@host:5432/db"
         )
 
 

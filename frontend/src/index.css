@@ -708,8 +708,8 @@ html, body, #root {
 /* Notifications Banner alert */
 #toast-notification {
   position: absolute;
-  top: 1rem;
-  right: 1.5rem;
+  bottom: 7.5rem;
+  right: 2rem;
   z-index: 100;
   animation: slideIn 0.3s ease-out;
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);

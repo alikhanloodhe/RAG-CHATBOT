@@ -20,3 +20,10 @@ dist-ssr/
 .idea/
 *.log
 *.db
+
+# Local RAG data and testing fallbacks
+qdrant_local_data/
+backend/qdrant_local_data/
+test_data/
+backend/test_data/
+

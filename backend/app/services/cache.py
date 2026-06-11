@@ -19,17 +19,31 @@ class CacheService:
         self.backend = "none"
         self._memory_cache: dict[str, tuple[str, float]] = {}
         try:
-            # Connect to Redis using config values
-            self.client = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                password=settings.REDIS_PASSWORD,
-                decode_responses=True,
-                socket_timeout=2
-            )
+            if settings.REDIS_URL:
+                self.client = redis.Redis.from_url(
+                    settings.REDIS_URL,
+                    decode_responses=True,
+                    socket_timeout=2
+                )
+            else:
+                # Connect to Redis using config values
+                self.client = redis.Redis(
+                    host=settings.REDIS_HOST,
+                    port=settings.REDIS_PORT,
+                    password=settings.REDIS_PASSWORD,
+                    decode_responses=True,
+                    socket_timeout=2
+                )
             self.client.ping()
             self.backend = "redis"
-            logger.info("Connected to Redis cache", extra={"host": settings.REDIS_HOST, "port": settings.REDIS_PORT})
+            logger.info(
+                "Connected to Redis cache",
+                extra={
+                    "url": settings.REDIS_URL,
+                    "host": settings.REDIS_HOST,
+                    "port": settings.REDIS_PORT,
+                },
+            )
         except Exception as exc:
             self.client = None
             if settings.is_production:

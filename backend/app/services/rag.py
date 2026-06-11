@@ -23,19 +23,30 @@ class RAGService:
             An active QdrantClient instance.
         """
         if self._client is None:
-            # Check if live Qdrant host is defined, and test connection.
-            if settings.QDRANT_HOST:
+            # Check if live Qdrant host or URL is defined, and test connection.
+            if settings.QDRANT_URL or settings.QDRANT_HOST:
                 try:
-                    self._client = QdrantClient(
-                        host=settings.QDRANT_HOST,
-                        port=settings.QDRANT_PORT,
-                        api_key=settings.QDRANT_API_KEY,
-                        timeout=2.0  # Fast timeout for testing
-                    )
+                    if settings.QDRANT_URL:
+                        self._client = QdrantClient(
+                            url=settings.QDRANT_URL,
+                            api_key=settings.QDRANT_API_KEY,
+                            timeout=2.0
+                        )
+                    else:
+                        self._client = QdrantClient(
+                            host=settings.QDRANT_HOST,
+                            port=settings.QDRANT_PORT,
+                            api_key=settings.QDRANT_API_KEY,
+                            timeout=2.0  # Fast timeout for testing
+                        )
                     self._client.get_collections()
                     logger.info(
                         "Connected to Qdrant",
-                        extra={"host": settings.QDRANT_HOST, "port": settings.QDRANT_PORT},
+                        extra={
+                            "url": settings.QDRANT_URL,
+                            "host": settings.QDRANT_HOST,
+                            "port": settings.QDRANT_PORT,
+                        },
                     )
                     return self._client
                 except Exception as e:
@@ -45,6 +56,7 @@ class RAGService:
                     logger.warning(
                         "Qdrant unavailable; using development fallback",
                         extra={
+                            "url": settings.QDRANT_URL,
                             "host": settings.QDRANT_HOST,
                             "port": settings.QDRANT_PORT,
                             "error": e.__class__.__name__,
@@ -53,7 +65,7 @@ class RAGService:
 
             # Fallback to local disk-based client for persistence in local dev environment
             if settings.is_production:
-                raise RuntimeError("QDRANT_HOST must be configured when APP_ENV=production")
+                raise RuntimeError("QDRANT_HOST or QDRANT_URL must be configured when APP_ENV=production")
 
             logger.info("Initializing local persistent Qdrant client", extra={"path": "./qdrant_local_data"})
             self._client = QdrantClient(path="./qdrant_local_data")
@@ -64,12 +76,13 @@ class RAGService:
         """Ensures that a Qdrant collection with the given name exists.
 
         If the collection does not exist, creates it configures with Cosine distance.
+        Also ensures that a payload index is created for the 'user_id' field.
 
         Args:
             collection_name: The name of the vector collection.
             size: Dimension of the vectors (defaults to 384 for bge-small).
         """
-        from qdrant_client.models import Distance, VectorParams
+        from qdrant_client.models import Distance, VectorParams, PayloadSchemaType
         try:
             self.client.get_collection(collection_name)
         except Exception:
@@ -77,6 +90,17 @@ class RAGService:
                 collection_name=collection_name,
                 vectors_config=VectorParams(size=size, distance=Distance.COSINE)
             )
+
+        # Ensure payload index on user_id is created for filtering (strict mode support)
+        try:
+            self.client.create_payload_index(
+                collection_name=collection_name,
+                field_name="user_id",
+                field_schema=PayloadSchemaType.INTEGER
+            )
+        except Exception:
+            # If the index already exists or creation fails, we can proceed
+            pass
 
     def upsert_vectors(self, collection_name: str, ids: list, vectors: list[list[float]], payloads: list[dict]):
         """Upserts a set of vectors and their metadata payloads into a Qdrant collection.

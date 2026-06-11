@@ -391,6 +391,9 @@ function App() {
             >
               📤 {isUploading ? 'Uploading...' : 'Upload Data Files'}
             </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.4rem', textAlign: 'center', lineHeight: 1.4 }}>
+              PDF, TXT, MD, CSV, JSON (Limit: 200MB)
+            </div>
           </div>
 
           <div>
